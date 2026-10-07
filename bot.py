@@ -82,6 +82,14 @@ def url_hash(url):
 def is_similar(title1, title2, threshold=0.75):
     return SequenceMatcher(None, title1.lower(), title2.lower()).ratio() > threshold
 
+def clean_html(raw_html):
+    """去除 HTML 标签，只留纯文本"""
+    if not raw_html:
+        return ""
+    text = re.sub(r'<[^>]+>', '', raw_html)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
 def is_relevant(text):
     text_lower = text.lower()
     return any(kw in text_lower for kw in KEYWORDS)
@@ -92,9 +100,9 @@ def fetch_rss(url, source_name):
     try:
         feed = feedparser.parse(url)
         for entry in feed.entries:
-            title = entry.get("title", "")
+            title = clean_html(entry.get("title", ""))
             link = entry.get("link", "")
-            summary = entry.get("summary", entry.get("description", ""))
+            summary = clean_html(entry.get("summary", entry.get("description", "")))
             published = entry.get("published_parsed", None)
 
             # 检查 24 小时内
