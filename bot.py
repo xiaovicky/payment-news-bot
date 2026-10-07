@@ -211,21 +211,50 @@ def generate_summary(items):
     return items
 
 def format_markdown(items, date_str):
-    """生成 Markdown 消息"""
-    lines = [f"# 本日摘要【{date_str}】\n"]
+    """生成 Markdown 消息，分为资讯和Post两部分"""
+    # 按来源分类
+    news_items = []  # 资讯：媒体和官方博客
+    post_items = []  # Post：X 高管发言
 
     for item in items:
-        # 标题：英文 + 中文
-        lines.append(f"## {item['title']}")
-        if item.get('title_cn') and item['title_cn'] != item['title']:
-            lines.append(f"**中文：** {item['title_cn']}")
-        lines.append(f"**一句话总结：** {item['one_liner']}")
-        # 摘要：英文原文 + 中文翻译
-        lines.append(f"**摘要：** {item['summary'][:200]}")
-        if item.get('summary_cn') and item['summary_cn'] != item['summary']:
-            lines.append(f"**摘要翻译：** {item['summary_cn'][:200]}")
-        lines.append(f"[阅读原文]({item['link']})")
+        source = item.get("source", "")
+        if source.startswith("X@"):
+            post_items.append(item)
+        else:
+            news_items.append(item)
+
+    lines = [f"# 本日摘要【{date_str}】\n"]
+
+    # 资讯部分
+    if news_items:
+        lines.append("## 📰 资讯")
         lines.append("")
+        for item in news_items:
+            lines.append(f"### {item['title']}")
+            if item.get('title_cn') and item['title_cn'] != item['title']:
+                lines.append(f"**中文：** {item['title_cn']}")
+            lines.append(f"**一句话总结：** {item['one_liner']}")
+            lines.append(f"**摘要：** {item['summary'][:200]}")
+            if item.get('summary_cn') and item['summary_cn'] != item['summary']:
+                lines.append(f"**摘要翻译：** {item['summary_cn'][:200]}")
+            lines.append(f"[阅读原文]({item['link']})")
+            lines.append("")
+
+    # Post部分
+    if post_items:
+        lines.append("## 💬 Post")
+        lines.append("")
+        for item in post_items:
+            lines.append(f"### {item['title']}")
+            if item.get('title_cn') and item['title_cn'] != item['title']:
+                lines.append(f"**中文：** {item['title_cn']}")
+            # Post 显示完整内容和来源
+            lines.append(f"**来源：** {item['source']}")
+            lines.append(f"**内容：** {item['summary'][:300]}")
+            if item.get('summary_cn') and item['summary_cn'] != item['summary']:
+                lines.append(f"**内容翻译：** {item['summary_cn'][:300]}")
+            lines.append(f"[查看原文]({item['link']})")
+            lines.append("")
 
     return "\n".join(lines)
 
