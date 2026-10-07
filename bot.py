@@ -181,24 +181,24 @@ def deduplicate(items, state):
     return unique
 
 def translate_to_chinese(text):
-    """用 Google Translate 免费接口翻译"""
+    """用 MyMemory API 翻译（免费，无需 Key）"""
     if not text:
         return ""
     try:
-        url = "https://translate.googleapis.com/translate_a/single"
+        url = "https://api.mymemory.translated.net/get"
         params = {
-            "client": "gtx",
-            "sl": "auto",
-            "tl": "zh-CN",
-            "dt": "t",
             "q": text[:500],
+            "langpair": "en|zh-CN",
         }
         resp = requests.get(url, params=params, timeout=10)
-        print(f"[DEBUG] Translate response status: {resp.status_code}")
         result = resp.json()
-        translated = "".join([item[0] for item in result[0] if item[0]])
-        print(f"[DEBUG] Translated: {translated[:50]}...")
-        return translated
+        translated = result.get("responseData", {}).get("translatedText", "")
+        if translated and translated != text:
+            print(f"[DEBUG] Translated OK: {translated[:50]}...")
+            return translated
+        else:
+            print(f"[DEBUG] Translate returned same text or empty")
+            return text
     except Exception as e:
         print(f"[ERROR] Translate failed: {e}")
         return text  # 失败时返回原文
