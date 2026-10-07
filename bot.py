@@ -177,14 +177,37 @@ def deduplicate(items, state):
 
     return unique
 
+def translate_to_chinese(text):
+    """用 Google Translate 免费接口翻译"""
+    if not text:
+        return ""
+    try:
+        url = "https://translate.googleapis.com/translate_a/single"
+        params = {
+            "client": "gtx",
+            "sl": "auto",
+            "tl": "zh-CN",
+            "dt": "t",
+            "q": text[:500],  # 限制长度防止超时
+        }
+        resp = requests.get(url, params=params, timeout=10)
+        result = resp.json()
+        # 解析返回结果
+        translated = "".join([item[0] for item in result[0] if item[0]])
+        return translated
+    except Exception as e:
+        print(f"[WARN] Translate failed: {e}")
+        return text  # 失败时返回原文
+
 def generate_summary(items):
     """生成 AI 摘要（调用 OpenAI 或其他）"""
-    # 这里简化为截取前 100 字
-    # 实际可接入 LLM API 生成更好的摘要
     for item in items:
         if not item["summary"]:
             item["summary"] = item["title"]
         item["one_liner"] = item["title"][:50]
+        # 翻译标题和摘要
+        item["title_cn"] = translate_to_chinese(item["title"])
+        item["summary_cn"] = translate_to_chinese(item["summary"][:300])
     return items
 
 def format_markdown(items, date_str):
@@ -192,9 +215,15 @@ def format_markdown(items, date_str):
     lines = [f"# 本日摘要【{date_str}】\n"]
 
     for item in items:
+        # 标题：英文 + 中文
         lines.append(f"## {item['title']}")
+        if item.get('title_cn') and item['title_cn'] != item['title']:
+            lines.append(f"**中文：** {item['title_cn']}")
         lines.append(f"**一句话总结：** {item['one_liner']}")
+        # 摘要：英文原文 + 中文翻译
         lines.append(f"**摘要：** {item['summary'][:200]}")
+        if item.get('summary_cn') and item['summary_cn'] != item['summary']:
+            lines.append(f"**摘要翻译：** {item['summary_cn'][:200]}")
         lines.append(f"[阅读原文]({item['link']})")
         lines.append("")
 
