@@ -211,7 +211,7 @@ def generate_summary(items):
     return items
 
 def format_markdown(items, date_str):
-    """生成 Markdown 消息，分为资讯和Post两部分"""
+    """生成 Markdown 消息，优化用户体验"""
     # 按来源分类
     news_items = []  # 资讯：媒体和官方博客
     post_items = []  # Post：X 高管发言
@@ -223,38 +223,63 @@ def format_markdown(items, date_str):
         else:
             news_items.append(item)
 
-    lines = [f"# 本日摘要【{date_str}】\n"]
+    lines = [f"# 📋 本日摘要【{date_str}】\n"]
 
     # 资讯部分
     if news_items:
         lines.append("## 📰 资讯")
         lines.append("")
-        for item in news_items:
-            lines.append(f"### {item['title']}")
-            if item.get('title_cn') and item['title_cn'] != item['title']:
-                lines.append(f"**中文：** {item['title_cn']}")
-            lines.append(f"**一句话总结：** {item['one_liner']}")
-            lines.append(f"**摘要：** {item['summary'][:200]}")
-            if item.get('summary_cn') and item['summary_cn'] != item['summary']:
-                lines.append(f"**摘要翻译：** {item['summary_cn'][:200]}")
-            lines.append(f"[阅读原文]({item['link']})")
+        for idx, item in enumerate(news_items, 1):
+            # 中文标题优先，英文缩进
+            title_cn = item.get('title_cn', '')
+            title_en = item['title']
+            if title_cn and title_cn != title_en:
+                lines.append(f"**{idx}. {title_cn}**")
+                lines.append(f"  {title_en}")
+            else:
+                lines.append(f"**{idx}. {title_en}**")
+
+            # 一句话总结
+            lines.append(f"  └ 💡 {item['one_liner']}")
+
+            # 摘要（如果有）
+            if item['summary'] and len(item['summary']) > 50:
+                summary_cn = item.get('summary_cn', '')
+                if summary_cn and summary_cn != item['summary']:
+                    lines.append(f"  └ 📝 {summary_cn[:150]}")
+                else:
+                    lines.append(f"  └ 📝 {item['summary'][:150]}")
+
+            # 原文链接
+            lines.append(f"  └ 🔗 [阅读原文]({item['link']})")
             lines.append("")
 
     # Post部分
     if post_items:
-        lines.append("## 💬 Post")
+        lines.append("## 💬 高管动态")
         lines.append("")
         for item in post_items:
-            lines.append(f"### {item['title']}")
-            if item.get('title_cn') and item['title_cn'] != item['title']:
-                lines.append(f"**中文：** {item['title_cn']}")
-            # Post 显示完整内容和来源
-            lines.append(f"**来源：** {item['source']}")
-            lines.append(f"**内容：** {item['summary'][:300]}")
-            if item.get('summary_cn') and item['summary_cn'] != item['summary']:
-                lines.append(f"**内容翻译：** {item['summary_cn'][:300]}")
+            # 提取账号名
+            account = item['source'].replace('X@', '')
+            # 内容优先，人名突出
+            content = item['summary'][:250] if item['summary'] else item['title']
+            content_cn = item.get('summary_cn', '')
+
+            # 人名 + 引用块显示内容
+            lines.append(f"**@{account}**")
+            lines.append(f"> {content}")
+            lines.append("")
+            if content_cn and content_cn != content:
+                lines.append(f"> 中文：{content_cn[:250]}")
+                lines.append("")
             lines.append(f"[查看原文]({item['link']})")
             lines.append("")
+
+    # 结尾统计
+    total_news = len(news_items)
+    total_posts = len(post_items)
+    lines.append("---")
+    lines.append(f"📊 今日共 {total_news} 条资讯，{total_posts} 条高管动态")
 
     return "\n".join(lines)
 
