@@ -154,6 +154,9 @@ def deduplicate(items, state):
     seen_urls = set(state["sent_urls"])
     seen_titles = state["sent_titles"]
 
+    # DEBUG: 调试阶段暂时去掉去重，直接返回所有抓取到的条目
+    return items
+
     for item in items:
         # URL 去重
         h = url_hash(item["link"])
