@@ -191,15 +191,16 @@ def translate_to_chinese(text):
             "sl": "auto",
             "tl": "zh-CN",
             "dt": "t",
-            "q": text[:500],  # 限制长度防止超时
+            "q": text[:500],
         }
         resp = requests.get(url, params=params, timeout=10)
+        print(f"[DEBUG] Translate response status: {resp.status_code}")
         result = resp.json()
-        # 解析返回结果
         translated = "".join([item[0] for item in result[0] if item[0]])
+        print(f"[DEBUG] Translated: {translated[:50]}...")
         return translated
     except Exception as e:
-        print(f"[WARN] Translate failed: {e}")
+        print(f"[ERROR] Translate failed: {e}")
         return text  # 失败时返回原文
 
 def generate_summary(items):
